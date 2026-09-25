@@ -24,7 +24,8 @@ jobs:
           format: table
           exit-code: 1
           severity: HIGH,CRITICAL
-
+          trivyignores: .trivyignore
+  
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
