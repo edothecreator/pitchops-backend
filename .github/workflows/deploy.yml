@@ -1,0 +1,39 @@
+name: Build, Scan & Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-scan-deploy:
+    name: Docker Build → Trivy Scan → Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t pitchops-backend:${{ github.sha }} .
+
+      - name: Run Trivy security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: pitchops-backend:${{ github.sha }}
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/pitchops-backend
+            git pull origin main
+            docker compose down
+            docker compose up -d --build
+            docker system prune -f
